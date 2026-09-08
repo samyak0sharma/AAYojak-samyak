@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+coverage/
+.turbo/
+
+# local environment and secrets
+.env
+.env.*
+!.env.example
+
+# runtime output
+*.log
+*.pid
+
+# IDE/OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Prisma local artifacts
+apps/api/prisma/dev.db
+apps/api/prisma/dev.db-journal
+

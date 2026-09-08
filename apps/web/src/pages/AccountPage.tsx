@@ -1,0 +1,7 @@
+import { LogOut, ShieldCheck, UserRound } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Container, PageMeta, SectionHeader } from '../components/layout';
+import { Avatar, Button, Card } from '../components/ui';
+import { useAuth } from '../context/AuthContext';
+
+export function AccountPage() { const { user, logout } = useAuth(); const navigate = useNavigate(); if (!user) return null; const signOut = async () => { await logout(); navigate('/', { replace: true }); }; return <><PageMeta title="Your account" description="Manage your Aayojak account." /><Container className="page-container account-page"><SectionHeader eyebrow="Your Aayojak" title="Account overview" description="Your authenticated account surface is ready for the ticket and booking work ahead." /><Card className="account-card"><Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="xl" /><div><p className="eyebrow">{user.role}</p><h2>{user.firstName} {user.lastName}</h2><p>{user.email}</p><span className="account-status"><ShieldCheck size={15} /> {user.emailVerifiedAt ? 'Email verified' : 'Email verification pending'}</span></div><Button variant="outline" onClick={() => void signOut()}><LogOut size={16} /> Sign out</Button></Card><div className="account-next"><Card><UserRound size={20} /><h3>Profile and tickets are coming through the API</h3><p>This phase establishes the authenticated frontend contract. Booking, ticket history, and organizer tools will use the same session.</p></Card></div></Container></>; }

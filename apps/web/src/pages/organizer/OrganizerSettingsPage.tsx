@@ -1,0 +1,4 @@
+import { Link } from 'react-router-dom';
+import { Container, PageMeta, SectionHeader } from '../../components/layout';
+import { Card } from '../../components/ui';
+export function OrganizerSettingsPage() { return <><PageMeta title="Organizer settings" description="Review organizer account settings on Aayojak." /><Container className="dashboard-page"><SectionHeader eyebrow="Workspace / settings" title="Settings" description="Account and provider configuration stays explicit and secure." /><Card className="settings-card"><h2>Profile and access</h2><p>Manage the public organizer identity from your profile. Authentication, payment, and upload secrets remain server-side and are never editable in the browser.</p><Link className="button button-secondary" to="/dashboard/organizer/profile">Open profile settings</Link></Card></Container></>; }
