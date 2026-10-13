@@ -52,7 +52,7 @@ export function EventDetailPage() {
   const lowest = event.ticketTiers[0];
   const reservePath = `/events/${event.slug}`;
   const canReserve = event.eventType === 'FREE' || event.ticketTiers.some(tierIsOpen);
-  const actionPath = user ? '/dashboard' : `/login?redirect=${encodeURIComponent(reservePath)}`;
+  const actionPath = user ? `${reservePath}/book` : `/login?redirect=${encodeURIComponent(`${reservePath}/book`)}`;
   return <>
     <PageMeta title={event.title} description={event.description.slice(0, 155)} />
     <Container className="page-container event-detail">

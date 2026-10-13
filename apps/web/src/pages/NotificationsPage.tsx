@@ -1,0 +1,10 @@
+import { Bell, Check } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../api/notifications';
+import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '../components/ui';
+import { Container, PageMeta, SectionHeader } from '../components/layout';
+
+export function NotificationsPage() {
+  const client = useQueryClient(); const notifications = useQuery({ queryKey: ['notifications'], queryFn: () => getNotifications() }); const markAll = useMutation({ mutationFn: markAllNotificationsRead, onSuccess: () => void client.invalidateQueries({ queryKey: ['notifications'] }) }); const markOne = useMutation({ mutationFn: markNotificationRead, onSuccess: () => void client.invalidateQueries({ queryKey: ['notifications'] }) });
+  return <><PageMeta title="Notifications" description="Your Aayojak notifications." /><Container className="page-container"><SectionHeader eyebrow="Your Aayojak" title="Notifications" description="Updates about your bookings, tickets, and events." action={<Button variant="outline" loading={markAll.isPending} onClick={() => markAll.mutate()}><Check size={15} /> Mark all read</Button>} />{notifications.isLoading ? <Skeleton className="table-skeleton" /> : notifications.isError ? <ErrorState description="Notifications could not be loaded." onRetry={() => void notifications.refetch()} /> : notifications.data?.items.length ? <div className="notification-list">{notifications.data.items.map((item) => <Card className={`notification-card ${item.readAt ? '' : 'notification-unread'}`} key={item.id}><div><Badge tone={item.readAt ? 'neutral' : 'accent'}>{item.type}</Badge><h3>{item.title}</h3><p>{item.body}</p><small>{new Date(item.createdAt).toLocaleString()}</small></div>{item.readAt ? null : <Button size="sm" variant="ghost" onClick={() => markOne.mutate(item.id)}>Mark read</Button>}</Card>)}</div> : <EmptyState title="No notifications" description="You are all caught up." action={<Bell size={20} />} />}</Container></>;
+}

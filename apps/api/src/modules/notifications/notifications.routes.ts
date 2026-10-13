@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { asyncHandler, sendSuccess } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
-import { notificationListQuerySchema } from './notifications.schemas.js';
-import { listNotifications } from './notifications.service.js';
+import { notificationIdSchema, notificationListQuerySchema } from './notifications.schemas.js';
+import { listNotifications, markAllNotificationsRead, markNotificationRead } from './notifications.service.js';
 
 export const notificationsRouter = Router();
 notificationsRouter.use(requireAuth);
@@ -17,3 +17,10 @@ notificationsRouter.get(
   }),
 );
 
+notificationsRouter.post('/read-all', asyncHandler(async (request, response) => {
+  sendSuccess(response, await markAllNotificationsRead(request.user!.id));
+}));
+
+notificationsRouter.post('/:id/read', validate('params', notificationIdSchema), asyncHandler(async (request, response) => {
+  sendSuccess(response, await markNotificationRead(request.user!.id, request.params.id as string));
+}));

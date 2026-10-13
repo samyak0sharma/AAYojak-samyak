@@ -4,6 +4,8 @@ import { ProtectedRoute, RoleProtectedRoute } from './components/auth';
 import { OrganizerLayout } from './components/organizer/OrganizerLayout';
 import { AboutPage } from './pages/AboutPage';
 import { AccountPage } from './pages/AccountPage';
+import { BookingCheckoutPage } from './pages/BookingCheckoutPage';
+import { BookingDetailPage } from './pages/BookingDetailPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { EventDetailPage } from './pages/EventDetailPage';
 import { EventsPage } from './pages/EventsPage';
@@ -22,6 +24,14 @@ import { OrganizerProfilePage } from './pages/organizer/OrganizerProfilePage';
 import { OrganizerRevenuePage } from './pages/organizer/OrganizerRevenuePage';
 import { OrganizerSettingsPage } from './pages/organizer/OrganizerSettingsPage';
 import { OrganizerTicketsPage } from './pages/organizer/OrganizerTicketsPage';
+import { OrganizerCheckInPage } from './pages/organizer/OrganizerCheckInPage';
+import { TicketsPage } from './pages/TicketsPage';
+import { TicketDetailPage } from './pages/TicketDetailPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { AdminPaymentsPage } from './pages/AdminPaymentsPage';
+import { NotificationsPage } from './pages/NotificationsPage';
+import { EventReviewPage } from './pages/EventReviewPage';
 
 export function App() {
   return <Routes>
@@ -29,6 +39,15 @@ export function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/events" element={<EventsPage />} />
       <Route path="/events/:slug" element={<EventDetailPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/events/:slug/book" element={<BookingCheckoutPage />} />
+        <Route path="/bookings/:id" element={<BookingDetailPage />} />
+        <Route path="/tickets" element={<TicketsPage />} />
+        <Route path="/tickets/:id" element={<TicketDetailPage />} />
+        <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/events/:slug/review" element={<EventReviewPage />} />
+      </Route>
       <Route path="/categories" element={<CategoriesPage />} />
       <Route path="/organizers" element={<OrganizersPage />} />
       <Route path="/organizers/:id" element={<OrganizerDetailPage />} />
@@ -48,12 +67,14 @@ export function App() {
           <Route path="bookings" element={<OrganizerBookingsPage />} />
           <Route path="attendees" element={<OrganizerAttendeesPage />} />
           <Route path="tickets" element={<OrganizerTicketsPage />} />
+          <Route path="check-in" element={<OrganizerCheckInPage />} />
           <Route path="revenue" element={<OrganizerRevenuePage />} />
           <Route path="analytics" element={<OrganizerAnalyticsPage />} />
           <Route path="profile" element={<OrganizerProfilePage />} />
           <Route path="settings" element={<OrganizerSettingsPage />} />
         </Route>
       </Route>
+      <Route element={<RoleProtectedRoute roles={['ADMIN']} />}><Route path="/admin" element={<AdminDashboardPage />} /><Route path="/admin/payments" element={<AdminPaymentsPage />} /></Route>
       <Route path="*" element={<NotFoundPage />} />
     </Route>
   </Routes>;

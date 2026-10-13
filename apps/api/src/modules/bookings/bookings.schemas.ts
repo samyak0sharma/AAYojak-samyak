@@ -10,3 +10,10 @@ export const bookingListQuerySchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'FAILED', 'REFUNDED']).optional(),
 });
 
+export const createBookingSchema = z.object({
+  eventId: z.string().uuid(),
+  items: z.array(z.object({
+    ticketTierId: z.string().uuid().optional(),
+    quantity: z.coerce.number().int().min(1).max(10),
+  })).min(1).max(10),
+});

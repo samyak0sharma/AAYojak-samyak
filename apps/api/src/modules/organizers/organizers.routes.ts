@@ -22,11 +22,11 @@ organizersRouter.get('/me/events', ...organizerOnly, validate('query', organizer
 organizersRouter.post('/me/events', ...organizerOnly, validate('body', organizerEventSchema), asyncHandler(async (request, response) => {
   sendSuccess(response, await createMyEvent(request.user!.id, request.body), 201);
 }));
-organizersRouter.get('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getMyEvent(request.user!.id, request.params.id))));
-organizersRouter.patch('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', organizerEventSchema), asyncHandler(async (request, response) => sendSuccess(response, await updateMyEvent(request.user!.id, request.params.id, request.body))));
-organizersRouter.post('/me/events/:id/submit', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', emptyBodySchema), asyncHandler(async (request, response) => sendSuccess(response, await submitMyEvent(request.user!.id, request.params.id))));
-organizersRouter.post('/me/events/:id/cancel', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', emptyBodySchema), asyncHandler(async (request, response) => sendSuccess(response, await cancelMyEvent(request.user!.id, request.params.id))));
-organizersRouter.delete('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await deleteMyDraft(request.user!.id, request.params.id))));
+organizersRouter.get('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getMyEvent(request.user!.id, request.params.id as string))));
+organizersRouter.patch('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', organizerEventSchema), asyncHandler(async (request, response) => sendSuccess(response, await updateMyEvent(request.user!.id, request.params.id as string, request.body))));
+organizersRouter.post('/me/events/:id/submit', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', emptyBodySchema), asyncHandler(async (request, response) => sendSuccess(response, await submitMyEvent(request.user!.id, request.params.id as string))));
+organizersRouter.post('/me/events/:id/cancel', ...organizerOnly, validate('params', organizerEventIdSchema), validate('body', emptyBodySchema), asyncHandler(async (request, response) => sendSuccess(response, await cancelMyEvent(request.user!.id, request.params.id as string))));
+organizersRouter.delete('/me/events/:id', ...organizerOnly, validate('params', organizerEventIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await deleteMyDraft(request.user!.id, request.params.id as string))));
 
 organizersRouter.get('/me/bookings', ...organizerOnly, validate('query', organizerDataQuerySchema), asyncHandler(async (request, response) => {
   const query = request.query as unknown as { page: number; limit: number; status?: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'FAILED' | 'REFUNDED'; search?: string; eventId?: string };
@@ -43,5 +43,5 @@ organizersRouter.get('/me/tickets', ...organizerOnly, validate('query', organize
 organizersRouter.get('/me/analytics', ...organizerOnly, asyncHandler(async (request, response) => sendSuccess(response, await getMyAnalytics(request.user!.id))));
 organizersRouter.get('/me/revenue', ...organizerOnly, asyncHandler(async (request, response) => sendSuccess(response, await getMyRevenue(request.user!.id))));
 
-organizersRouter.get('/:id/events', validate('params', organizerIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getOrganizerEvents(request.params.id))));
-organizersRouter.get('/:id', validate('params', organizerIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getOrganizer(request.params.id))));
+organizersRouter.get('/:id/events', validate('params', organizerIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getOrganizerEvents(request.params.id as string))));
+organizersRouter.get('/:id', validate('params', organizerIdSchema), asyncHandler(async (request, response) => sendSuccess(response, await getOrganizer(request.params.id as string))));

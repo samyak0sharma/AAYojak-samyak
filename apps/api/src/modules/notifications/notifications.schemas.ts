@@ -9,3 +9,4 @@ export const notificationListQuerySchema = z.object({
     .transform((value) => value === 'true'),
 });
 
+export const notificationIdSchema = z.object({ id: z.string().uuid() });

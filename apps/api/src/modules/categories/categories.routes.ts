@@ -20,7 +20,7 @@ categoriesRouter.get(
   '/:slug',
   validate('params', categorySlugSchema),
   asyncHandler(async (request, response) => {
-    const category = await getCategoryBySlug(request.params.slug);
+    const category = await getCategoryBySlug(request.params.slug as string);
     if (!category) {
       throw new AppError(404, 'CATEGORY_NOT_FOUND', 'The requested category was not found.');
     }

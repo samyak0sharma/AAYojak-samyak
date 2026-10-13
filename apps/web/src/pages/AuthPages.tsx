@@ -18,7 +18,7 @@ function messageFor(error: unknown) {
 export function LoginPage() {
   const { login } = useAuth(); const navigate = useNavigate(); const location = useLocation();
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/dashboard';
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? new URLSearchParams(location.search).get('redirect') ?? '/dashboard';
   const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); setLoading(true); try { await login({ email, password }); navigate(from, { replace: true }); } catch (authError) { setError(messageFor(authError)); } finally { setLoading(false); } };
   return <AuthFrame title="Welcome back" description="Sign in to keep your event plans moving."><form className="auth-form" onSubmit={submit}><Input label="Email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} error={error} /><Input label="Password" type="password" autoComplete="current-password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} /><div className="auth-row"><Link to="/forgot-password">Forgot password?</Link></div><Button type="submit" loading={loading}>Sign in</Button><p className="auth-switch">New to Aayojak? <Link to="/signup">Create an account</Link></p></form></AuthFrame>;
 }

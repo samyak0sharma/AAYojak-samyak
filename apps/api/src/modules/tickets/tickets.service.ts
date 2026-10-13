@@ -57,3 +57,14 @@ export async function getTicket(id: string, userId: string, role: UserRole) {
   }
   return ticket;
 }
+
+/** The opaque QR token is returned only by this explicit attendee QR endpoint. */
+export async function getTicketQr(id: string, userId: string) {
+  const ticket = await prisma.ticket.findFirst({
+    where: { id, booking: { userId, status: 'CONFIRMED' } },
+    select: { qrPayload: true, status: true, booking: { select: { event: { select: { status: true } } } } },
+  });
+  if (!ticket) throw new AppError(404, 'TICKET_NOT_FOUND', 'The requested ticket was not found.');
+  if (ticket.status === 'CANCELLED' || ticket.status === 'EXPIRED' || ticket.booking.event.status === 'CANCELLED') throw new AppError(409, 'TICKET_NOT_USABLE', 'This ticket no longer has a usable QR code.');
+  return { payload: ticket.qrPayload };
+}

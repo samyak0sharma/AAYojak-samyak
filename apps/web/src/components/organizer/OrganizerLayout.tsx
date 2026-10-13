@@ -1,8 +1,8 @@
-import { BarChart3, CalendarDays, ChevronRight, ClipboardList, Gauge, LogOut, Menu, Settings2, Ticket, UserRound, Users, Wallet, X } from 'lucide-react';
+import { BarChart3, CalendarDays, ChevronRight, ClipboardList, Gauge, LogOut, Menu, ScanLine, Settings2, Ticket, UserRound, Users, Wallet, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Avatar, Button } from '../ui';
+import { Avatar } from '../ui';
 
 const links = [
   { to: '/dashboard/organizer', label: 'Overview', icon: Gauge, end: true },
@@ -10,6 +10,7 @@ const links = [
   { to: '/dashboard/organizer/bookings', label: 'Bookings', icon: ClipboardList },
   { to: '/dashboard/organizer/attendees', label: 'Attendees', icon: Users },
   { to: '/dashboard/organizer/tickets', label: 'Tickets', icon: Ticket },
+  { to: '/dashboard/organizer/check-in', label: 'Check-in', icon: ScanLine },
   { to: '/dashboard/organizer/revenue', label: 'Revenue', icon: Wallet },
   { to: '/dashboard/organizer/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/dashboard/organizer/profile', label: 'Profile', icon: UserRound },

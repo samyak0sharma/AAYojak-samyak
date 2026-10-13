@@ -1,4 +1,4 @@
-import { Prisma, type BookingStatus, type EventStatus } from '@prisma/client';
+import { Prisma, type BookingStatus, type EventStatus, type TicketStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { AppError, pagination } from '../../lib/http.js';
 import type { OrganizerEventInput, OrganizerEventListQuery, OrganizerProfileInput } from './organizers.schemas.js';
@@ -179,7 +179,25 @@ export async function submitMyEvent(userId: string, id: string) {
   return prisma.event.update({ where: { id }, data: { status: 'SUBMITTED', moderationNote: null }, select: organizerEventSelect });
 }
 
-export async function cancelMyEvent(userId: string, id: string) { await getMyEvent(userId, id); return prisma.event.update({ where: { id }, data: { status: 'CANCELLED' }, select: organizerEventSelect }); }
+export async function cancelMyEvent(userId: string, id: string) {
+  return prisma.$transaction(async (tx) => {
+    const event = await tx.event.findFirst({ where: { id, organizer: { userId } }, select: { id: true, title: true, status: true, bookings: { where: { status: { in: ['PENDING', 'CONFIRMED'] } }, select: { id: true, userId: true, status: true, items: { select: { ticketTierId: true, quantity: true } } } } } });
+    if (!event) throw new AppError(404, 'EVENT_NOT_FOUND', 'The requested event was not found.');
+    if (event.status === 'CANCELLED') throw new AppError(409, 'EVENT_ALREADY_CANCELLED', 'This event has already been cancelled.');
+    await tx.event.update({ where: { id }, data: { status: 'CANCELLED' } });
+    for (const booking of event.bookings) {
+      if (booking.status === 'PENDING') {
+        await tx.booking.update({ where: { id: booking.id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
+        await tx.payment.updateMany({ where: { bookingId: booking.id, status: { in: ['INITIATED', 'PENDING'] } }, data: { status: 'CANCELLED' } });
+        for (const item of booking.items) if (item.ticketTierId) await tx.ticketTier.update({ where: { id: item.ticketTierId }, data: { reservedQuantity: { decrement: item.quantity } } });
+      } else {
+        await tx.ticket.updateMany({ where: { bookingId: booking.id, status: 'ISSUED' }, data: { status: 'CANCELLED' } });
+      }
+      await tx.notification.create({ data: { userId: booking.userId, type: 'CANCELLATION', title: 'Event cancelled', body: `The event "${event.title}" has been cancelled by the organizer. Contact support about any applicable refund.`, data: { eventId: event.id, bookingId: booking.id, status: 'CANCELLED' } } });
+    }
+    return tx.event.findUniqueOrThrow({ where: { id }, select: organizerEventSelect });
+  });
+}
 export async function deleteMyDraft(userId: string, id: string) {
   const event = await getMyEvent(userId, id); if (!['DRAFT', 'REJECTED'].includes(event.status)) throw new AppError(409, 'EVENT_NOT_DELETABLE', 'Only draft or rejected events can be deleted.'); if (event._count.bookings > 0) throw new AppError(409, 'EVENT_HAS_HISTORY', 'Events with booking history cannot be deleted.');
   await prisma.event.delete({ where: { id } }); return { id };
@@ -203,7 +221,8 @@ export async function listMyBookings(userId: string, page: number, limit: number
 
 export async function listMyAttendees(userId: string, page: number, limit: number, query: { search?: string; eventId?: string; checkedIn?: 'true' | 'false' }) {
   const bookings = await prisma.booking.findMany({ where: { ...ownerBookingWhere(userId), status: 'CONFIRMED', ...(query.eventId ? { eventId: query.eventId } : {}), ...(query.search ? { OR: [{ bookingNumber: { contains: query.search, mode: 'insensitive' } }, { event: { title: { contains: query.search, mode: 'insensitive' } } }, { user: { email: { contains: query.search, mode: 'insensitive' } } }, { user: { firstName: { contains: query.search, mode: 'insensitive' } } }, { user: { lastName: { contains: query.search, mode: 'insensitive' } } }] } : {}) }, orderBy: { createdAt: 'desc' }, select: { id: true, bookingNumber: true, status: true, event: { select: { id: true, title: true, startAt: true } }, user: { select: { id: true, firstName: true, lastName: true, email: true } }, items: { select: { ticketName: true, quantity: true, tickets: { select: { id: true, ticketCode: true, status: true, checkedInAt: true } } } } } });
-  const rows = bookings.flatMap((booking) => booking.items.flatMap((item) => item.tickets.length ? item.tickets.map((ticket) => ({ bookingId: booking.id, bookingNumber: booking.bookingNumber, event: booking.event, attendee: booking.user, ticketName: item.ticketName, quantity: item.quantity, ticket })) : [{ bookingId: booking.id, bookingNumber: booking.bookingNumber, event: booking.event, attendee: booking.user, ticketName: item.ticketName, quantity: item.quantity, ticket: null }]));
+  type AttendeeRow = { bookingId: string; bookingNumber: string; event: { id: string; title: string; startAt: Date }; attendee: { id: string; firstName: string; lastName: string; email: string }; ticketName: string; quantity: number; ticket: { id: string; ticketCode: string; status: TicketStatus; checkedInAt: Date | null } | null };
+  const rows: AttendeeRow[] = bookings.flatMap<AttendeeRow>((booking) => booking.items.flatMap<AttendeeRow>((item) => item.tickets.length ? item.tickets.map((ticket) => ({ bookingId: booking.id, bookingNumber: booking.bookingNumber, event: booking.event, attendee: booking.user, ticketName: item.ticketName, quantity: item.quantity, ticket })) : [{ bookingId: booking.id, bookingNumber: booking.bookingNumber, event: booking.event, attendee: booking.user, ticketName: item.ticketName, quantity: item.quantity, ticket: null }]));
   const filtered = query.checkedIn ? rows.filter((row) => query.checkedIn === 'true' ? Boolean(row.ticket?.checkedInAt) : !row.ticket?.checkedInAt) : rows;
   return { items: filtered.slice((page - 1) * limit, page * limit), pagination: pagination(page, limit, filtered.length) };
 }
@@ -228,11 +247,11 @@ async function ownerId(userId: string) {
 export async function getMyAnalytics(userId: string) {
   const organizerId = await ownerId(userId); const eventWhere = { organizerId }; const bookingWhere = { event: { organizerId } };
   const [eventGroups, bookingGroups, ticketCount, confirmed, pending, refunded, completedPayments, rows] = await prisma.$transaction([
-    prisma.event.groupBy({ by: ['status'], where: eventWhere, _count: { _all: true } }), prisma.booking.groupBy({ by: ['status'], where: bookingWhere, _count: { _all: true } }),
+    prisma.event.groupBy({ by: ['status'], where: eventWhere, orderBy: { status: 'asc' }, _count: { _all: true } }), prisma.booking.groupBy({ by: ['status'], where: bookingWhere, orderBy: { status: 'asc' }, _count: { _all: true } }),
     prisma.ticket.count({ where: { booking: bookingWhere, status: { not: 'CANCELLED' } } }), prisma.booking.aggregate({ where: { ...bookingWhere, status: 'CONFIRMED' }, _sum: { total: true } }), prisma.booking.aggregate({ where: { ...bookingWhere, status: 'PENDING' }, _sum: { total: true } }), prisma.booking.aggregate({ where: { ...bookingWhere, status: 'REFUNDED' }, _sum: { total: true } }), prisma.payment.aggregate({ where: { status: 'COMPLETED', booking: bookingWhere }, _sum: { amount: true } }),
     prisma.booking.findMany({ where: bookingWhere, select: { createdAt: true, status: true, total: true }, orderBy: { createdAt: 'asc' } }),
   ]);
-  const eventCounts = Object.fromEntries(eventGroups.map((row) => [row.status, row._count._all])); const bookingCounts = Object.fromEntries(bookingGroups.map((row) => [row.status, row._count._all])); const monthly = new Map<string, { bookings: number; revenue: number }>();
+  const eventCounts = Object.fromEntries((eventGroups as Array<{ status: EventStatus; _count: { _all: number } }>).map((row) => [row.status, row._count._all])); const bookingCounts = Object.fromEntries((bookingGroups as Array<{ status: BookingStatus; _count: { _all: number } }>).map((row) => [row.status, row._count._all])); const monthly = new Map<string, { bookings: number; revenue: number }>();
   for (const row of rows) { const key = row.createdAt.toISOString().slice(0, 7); const value = monthly.get(key) ?? { bookings: 0, revenue: 0 }; value.bookings += 1; if (row.status === 'CONFIRMED') value.revenue += Number(row.total); monthly.set(key, value); }
   return { overview: { totalEvents: Object.values(eventCounts).reduce((sum, count) => sum + Number(count), 0), publishedEvents: eventCounts.PUBLISHED ?? 0, draftEvents: eventCounts.DRAFT ?? 0, submittedEvents: eventCounts.SUBMITTED ?? 0, rejectedEvents: eventCounts.REJECTED ?? 0, totalBookings: Object.values(bookingCounts).reduce((sum, count) => sum + Number(count), 0), totalAttendees: bookingCounts.CONFIRMED ?? 0, ticketsSold: ticketCount, grossRevenue: Number(confirmed._sum.total ?? 0), successfulPayments: Number(completedPayments._sum.amount ?? 0), pendingRevenue: Number(pending._sum.total ?? 0), refundedAmount: Number(refunded._sum.total ?? 0) }, series: Array.from(monthly, ([month, value]) => ({ month, ...value })) };
 }

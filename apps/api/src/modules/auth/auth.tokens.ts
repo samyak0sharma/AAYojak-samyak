@@ -35,7 +35,11 @@ export function parseDurationMs(value: string) {
     h: 3_600_000,
     d: 86_400_000,
   };
-  const multiplier = multipliers[match[2]];
+  const unit = match[2];
+  if (!unit) {
+    throw new Error(`Unsupported duration unit: ${match[2]}`);
+  }
+  const multiplier = multipliers[unit];
   if (!multiplier) {
     throw new Error(`Unsupported duration unit: ${match[2]}`);
   }

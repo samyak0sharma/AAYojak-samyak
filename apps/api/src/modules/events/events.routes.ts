@@ -20,7 +20,7 @@ eventsRouter.get(
   validate('query', relatedEventQuerySchema),
   asyncHandler(async (request, response) => {
     const query = request.query as unknown as { limit: number };
-    sendSuccess(response, await getRelatedEvents(request.params.slug, query.limit));
+    sendSuccess(response, await getRelatedEvents(request.params.slug as string, query.limit));
   }),
 );
 
@@ -28,6 +28,6 @@ eventsRouter.get(
   '/:slug',
   validate('params', eventSlugSchema),
   asyncHandler(async (request, response) => {
-    sendSuccess(response, await getEventBySlug(request.params.slug));
+    sendSuccess(response, await getEventBySlug(request.params.slug as string));
   }),
 );

@@ -15,6 +15,7 @@
     "test": "pnpm -r test",
     "db:generate": "pnpm --filter @aayojak/api prisma:generate",
     "db:migrate": "pnpm --filter @aayojak/api prisma:migrate",
+    "db:migrate:deploy": "pnpm --filter @aayojak/api prisma:migrate:deploy",
     "db:seed": "pnpm --filter @aayojak/api prisma:seed"
   },
   "devDependencies": {
